@@ -1,0 +1,35 @@
+Package: procatapp
+Title: 4F Process Attribution
+Version: 0.0.0.9000
+Authors@R: 
+    person("Grant", "Irvine-Smith", , "grant.irvine-smith@ninetyone.com", role = c("aut", "cre"))
+Description: ProCat enables interactive process attribution for 4F funds. If you can't measure it, you can't manage it!
+License: file LICENSE
+Imports: 
+    bs4Dash,
+    config,
+    checkmate,
+    clock,
+    crayon,
+    data.table,
+    dg,
+    ggplot2,
+    glue,
+    golem,
+    gpa,
+    htmltools,
+    magrittr,
+    rlang,
+    shiny,
+    shinyWidgets,
+    stringr
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE, r6 = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    shinytest2,
+    spelling,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Language: en-US
