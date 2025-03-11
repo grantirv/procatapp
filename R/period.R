@@ -69,13 +69,15 @@ period_input <- function(
 
   ")
 
-  out <- div(
+  container <- div(
+    id = ns("container"),
+    class = "period_input_container",
     tags$head(tags$style(HTML(css))),
     date_range_input,
     btns
   )
 
-  return(out)
+  return(container)
 }
 
 # __________________________________________________________________________________________________

@@ -21,6 +21,7 @@ Imports:
     magrittr,
     rlang,
     shiny,
+    shinyjs,
     shinyWidgets,
     stringr
 Encoding: UTF-8

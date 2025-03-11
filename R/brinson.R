@@ -15,77 +15,109 @@ brinson_ui <- function(
 
   ns <- shiny::NS(id)
 
-  # select row field
-    row <- div(style = "grid-area: row;",
-      selectizeInput(
-        inputId = ns("rows"),
-        label = "Rows",
-        choices = list(
-          "RGN"   = "rgn",
-          "CTRY"  = "ctry",
-          "GICS1" = "gics1",
-          "GICS2" = "gics2",
-          "GICS3" = "gics3",
-          "GICS4" = "gics4",
-          "STOCK" = "infocode"
-        ),
-        selected = "gics1",
-        multiple = FALSE,
-        options = list(
-          placeholder = "Select row field"
-        ),
-        width = "100%"
-      )
+  # select analysis period
+    analysis_period <- period_input(id = ns("period"), label = NULL, width = "500px")
+
+  # select allocation field - this will be used to measure the allocation effect
+    rows <- selectizeInput(
+      inputId = ns("rows"),
+      label = "Rows",
+      choices = list(
+        "RGN"   = "rgn",
+        "CTRY"  = "ctry",
+        "GICS1" = "gics1",
+        "GICS2" = "gics2",
+        "GICS3" = "gics3",
+        "GICS4" = "gics4",
+        "STOCK" = "infocode"
+      ),
+      selected = "gics1",
+      multiple = FALSE,
+      options = list(
+        placeholder = "Select allocation field"
+      ),
+      width = "120px"
     )
 
-  # select column field
-    column <- div(style = "grid-area: column;",
-      selectizeInput(
-        inputId = ns("columns"),
-        label = "Columns",
-        choices = list(
-          "Effects" = "effect",
-          "Year"    = "year",
-          "Quarter" = "quarter",
-          "Month"   = "month"
-        ),
-        selected = "effect",
-        multiple = FALSE,
-        options = list(
-          placeholder = "Select column field"
-        ),
-        width = "100%"
-      )
+  # select group_by field - this splits the effects into different groups displayed as columns
+    columns <- selectizeInput(
+      inputId = ns("columns"),
+      label = "Columns",
+      choices = list(
+        "Effects" = "effect",
+        "Year"    = "year",
+        "Quarter" = "quarter",
+        "Month"   = "month"
+      ),
+      selected = "effect",
+      multiple = FALSE,
+      options = list(
+        placeholder = "Select column field"
+      ),
+      width = "120px"
     )
 
-  # select date range for analysis
-    period <- div(style = "grid-area: period;",
-      period_input(id = ns("period"), label = "Period", width = "500px")
+  # set max rows to display - remainder are collapsed into 'Other'
+    max_rows <- selectizeInput(
+      inputId = ns("max_rows"),
+      label = "Max Rows",
+      choices = list(
+        "10"    = 10,
+        "20"    = 20,
+        "50"    = 50,
+        "100"   = 100,
+        "500"   = 500,
+        "1000"  = 1000,
+        "ALL"   = Inf
+      ),
+      selected = "50",
+      multiple = FALSE,
+      options = list(
+        placeholder = "Select max rows to display"
+      ),
+      width = "100px"
     )
 
   # display brinson table
-    table <- div(style = "grid-area: table; justify-self: start;",
-      gt::gt_output(ns("table"))
-    )
+    table <- gt::gt_output(ns("table")) |>
+      tagAppendAttributes(class = "gt_brinson")
 
-  # layout
-    layout <- div(style = "
-      display: grid;
-      grid-template-columns: 200px 200px 1fr;
-      grid-template-rows: auto 1fr;
-      column-gap: 20px;
-      row-gap: 20px;
-      grid-template-areas:
-        'row   column period'
-        'table table  table';
-    ",
-      row,
-      column,
-      period,
+  # group controls together
+    controls <- div(
+      id = ns("controls"),
+      class = "brinson_controls",
+      style = "
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: flex-end;
+        column-gap: 20px;
+        flex-wrap: wrap;
+      ",
+      analysis_period,
+      rows,
+      columns,
+      max_rows
+    ) |> shiny::wellPanel(style = "paddding: 10px !important;")
+
+  # fine tune styling
+    css <- glue::glue("
+      #{ns('container')} .shiny-input-container {{
+        margin-bottom: 0px;
+      }}
+    ")
+
+    css <- tags$head(tags$style(HTML(css)))
+
+    container <- div(
+      id = id,
+      class = "brinson_container",
+      css,
+      controls,
       table
     )
 
-  return(layout)
+  return(container)
 }
 
 # __________________________________________________________________________________________________
@@ -128,20 +160,51 @@ brinson_server <- function(
         as.formula(paste(input$rows, "~", input$columns))
       }) |> cl("brinson_server", "formula")
 
+    # max_rows
+      max_rows <- reactive({
+        as.numeric(input$max_rows)
+      })
+
+    # sort_by
+      sort_by <- reactive({
+        if (max_rows() == Inf) {
+          "name"
+        } else {
+          "ctb"
+        }
+      })
+
     # create attribution table
       atb_table <- reactive({
         gpa::AttributionTable$new(
           atb_data = atb_data_slice(),
           formula = formula(),
-          filter = NULL
+          filter = NULL,
+          id = gt::random_id(),
+          height = "100%",
+          max_rows = max_rows(),
+          sort_by = sort_by(),
+          freeze_panes = c("top", "bottom", "left", "right"),
+          highlight_on_hover = TRUE
         )
       }) |> cl("brinson_server", "atb_table")
 
     # create table output
       output$table <- gt::render_gt({
-        atb_table()$tbl
-      }) |> cl("brinson_server", "output_table")
+        tbl <- atb_table()$tbl
+        atb_table()$gt
+      },
+      height = "calc(100vh - 300px)",
+      width = "calc(100vw - 100px)",
+      align = "left"
+      ) |> cl("brinson_server", "output_table")
 
+    # get clicked cell
+      clicked_cell <- reactive({
+        input$clicked_cell # set in brinson.js
+      }) |> cl("brinson_server", "clicked_cell")
+
+    clicked_cell
   })
 
 }
@@ -151,14 +214,19 @@ brinson_server <- function(
     id = "brinson",
     atb_data = gpa::europe_3y
   ){
-
     ui <- fluidPage(
-      br(),
-      brinson_ui(id)
+      golem_add_external_resources(),
+      brinson_ui(id),
+      shiny::verbatimTextOutput("clicked_cell", placeholder = TRUE),
+      actionButton("debug", "Debug")
     )
 
     server <- function(input, output, session){
-      brinson_server(id = id, atb_data = atb_data)
+      clicked_cell <- brinson_server(id = id, atb_data = atb_data)
+      output$clicked_cell <- renderPrint({
+        clicked_cell()
+      })
+      observeEvent(input$debug, browser())
     }
 
     shinyApp(ui, server)

@@ -7,23 +7,12 @@
 \usage{
 brinson_ui(id)
 
-brinson_server(
-  id,
-  atb_data,
-  row_field = c("rgn", "ctry", "gics1", "gics2", "gics3", "gics4", "infocode"),
-  column_field = c("effect", "year", "quarter", "month")
-)
+brinson_server(id, atb_data)
 }
 \arguments{
 \item{id}{The id of the module}
 
 \item{atb_data}{A reactive \link[gpa:AttributionData]{gpa::AttributionData} object}
-
-\item{row_field}{Initial row field for the Brinson table. This becomes the LHS of the formula
-field of the \link[gpa:AttributionTable]{gpa::AttributionTable} object.}
-
-\item{column_field}{Initial column field for the Brinson table. This becomes the RHS of the
-formula field of the \link[gpa:AttributionTable]{gpa::AttributionTable} object.}
 }
 \value{
 The \code{brinson_ui} function returns a UI for Brinson attribution analysis.
